@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit import record_run
 from app.llm import LLMClient, LLMError, LLMTimeoutError
-from app.markers import INJECTION_MARKERS, VAGUE_MARKERS, contains
+from app.markers import INJECTION_MARKERS, VAGUE_MARKERS, contains, has_mixed_intents
 from app.schemas import StructuredItem
 
 MAX_TEXT_LENGTH = 4000
@@ -26,6 +26,7 @@ class ReviewCode(StrEnum):
     PROMPT_INJECTION = "PROMPT_INJECTION"
     LOW_CONFIDENCE = "LOW_CONFIDENCE"
     VAGUE_INPUT = "VAGUE_INPUT"
+    MIXED_INTENTS = "MIXED_INTENTS"
 
 
 class TextTooLongError(Exception):
@@ -114,6 +115,8 @@ def _review_reason(text: str, item: StructuredItem) -> ReviewCode | None:
         return ReviewCode.PROMPT_INJECTION
     if contains(text, VAGUE_MARKERS):
         return ReviewCode.VAGUE_INPUT
+    if has_mixed_intents(text):
+        return ReviewCode.MIXED_INTENTS
     if item.confidence == "low" or item.needs_review:
         return ReviewCode.LOW_CONFIDENCE
     return None

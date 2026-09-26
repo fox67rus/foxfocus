@@ -11,6 +11,7 @@ from app.markers import (
     NOTE_MARKERS,
     VAGUE_MARKERS,
     contains,
+    has_mixed_intents,
 )
 from app.models import utc_now
 
@@ -95,7 +96,8 @@ class MockLLM:
 
     @staticmethod
     def _confidence(lowered: str) -> str:
-        if contains(lowered, VAGUE_MARKERS) or len(lowered.split()) < 2:
+        vague = contains(lowered, VAGUE_MARKERS) or has_mixed_intents(lowered)
+        if vague or len(lowered.split()) < 2:
             return "low"
         if contains(lowered, ACTION_MARKERS):
             return "high"

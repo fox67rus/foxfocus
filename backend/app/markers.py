@@ -58,3 +58,8 @@ INJECTION_MARKERS = (
 def contains(text: str, markers: tuple[str, ...]) -> bool:
     lowered = text.lower()
     return any(marker in lowered for marker in markers)
+
+
+def has_mixed_intents(text: str) -> bool:
+    """И действие, и заметка в одном тексте: несводимые намерения, один элемент не честен."""
+    return contains(text, ACTION_MARKERS) and contains(text, NOTE_MARKERS)
