@@ -22,8 +22,8 @@
 - [x] Ручная правка записей с `needs_review`
 - [x] Десять фиксированных входов: `tests_data/inputs.jsonl`
 - [x] Живой LLM: ProxyAPI или OpenAI по env, в тестах остаётся `LLM_MODE=mock`
-- [x] Веб-панель: Входящие / Задачи / Журнал / карточка, экспорт JSON и CSV
-- [ ] Сборка в один контейнер
+- [x] Веб-панель: Входящие / Задачи / Заметки / Журнал / карточка, экспорт JSON и CSV
+- [x] Сборка в один контейнер: UI и API на одном порту
 
 ## Установка
 
@@ -57,7 +57,18 @@ npm run dev
 
 Открыть http://127.0.0.1:5173. Запросы к API проксируются на порт 8000.
 
-Swagger — [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+После `npm run build` FastAPI сам отдаёт панель из `frontend/dist` на порту 8000 — отдельный Vite не нужен.
+
+### Docker
+
+Один контейнер, файл базы на volume `./data`. Сначала `copy .env.example .env`. Для живой модели ключ (`PROXYAPI_KEY` или `OPENAI_API_KEY`) должен быть в этом `.env`: переменные Windows внутрь контейнера не попадают. Если ключа нет, контейнер стартует в `mock`.
+
+```bat
+docker compose up --build
+```
+
+Панель и API: http://127.0.0.1:8000  
+Swagger: http://127.0.0.1:8000/docs
 
 ```bat
 curl.exe http://127.0.0.1:8000/health
@@ -79,7 +90,7 @@ curl.exe -X POST http://127.0.0.1:8000/ai/structure -H "Content-Type: applicatio
 curl.exe -X POST http://127.0.0.1:8000/capture -H "Content-Type: application/json" -d "{\"text\": \"оплатить хостинг\", \"user_id\": \"u_1\"}"
 curl.exe "http://127.0.0.1:8000/tasks?user_id=u_1&status=open"
 curl.exe -X POST http://127.0.0.1:8000/tasks/1/done -H "Content-Type: application/json" -d "{\"user_id\": \"u_1\"}"
-curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: application/json" -d "{\"user_id\": \"u_1\", \"title\": \"Разобрать почту\", \"priority\": \"high\"}"
+curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: application/json" -d "{\"user_id\": \"u_1\", \"title\": \"Разобрать почту\", \"priority\": \"high\", \"due_date\": \"2026-10-01\"}"
 ```
 
 В PowerShell вызывай `curl.exe`: короткое `curl` там псевдоним `Invoke-WebRequest`.
@@ -90,6 +101,7 @@ curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: applicat
 | Метод | Путь                  | Описание                                                    |
 | ----- | --------------------- | ----------------------------------------------------------- |
 | GET   | `/health`             | Проверка живости сервиса                                     |
+| GET   | `/llm/status`         | Проверка связи с LLM (`user_id`), без генерации              |
 | POST  | `/ai/structure`       | Разбор текста в строгую схему, без записи                    |
 | POST  | `/capture`            | Разобрать текст и сохранить задачу или заметку               |
 | GET   | `/tasks`              | Задачи пользователя, фильтр `status=open\|done`              |
@@ -104,7 +116,7 @@ curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: applicat
 
 `status=open` возвращает всё, что не `done`. Повторный `POST /tasks/{id}/done` по закрытой задаче тоже отвечает `{"status":"ok"}`.
 
-Ручная проверка: `POST /tasks/{id}/review` принимает `title` и `priority` (`low|medium|high`), снимает `needs_review` и очищает `review_reason`. У заметки приоритета нет — правится только `title`. Прогон пишется в журнал отдельным действием `update`, рядом с исходным `capture`, а не вместо него.
+Ручная проверка: `POST /tasks/{id}/review` принимает `title`, `priority` (`low|medium|high`) и `due_date` (ISO-дата или `null`). Пустой срок снимает дату. Если `due_date` не передан, прежний срок не трогаем. Снимается `needs_review`, очищается `review_reason`. У заметки срока и приоритета нет — правится только `title`. Прогон пишется в журнал отдельным действием `update`, рядом с исходным `capture`, а не вместо него.
 
 ## Разбор текста и `needs_review`
 
@@ -152,6 +164,8 @@ curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: applicat
 
 Строку пишет каждая точка доступа, в том числе когда запрос закончился отказом: `404` попадает в журнал с кодом `NOT_FOUND`, непредвиденная ошибка — с `INTERNAL_ERROR`. Один `POST /capture` оставляет две строки: `structure` с черновиком модели и причиной проверки, затем `capture` с ответом API. Для списков (`tasks`, `notes`, `audit`) в `output` пишется размер выдачи, а не сама выдача: иначе журнал начал бы разрастаться от собственных просмотров.
 
+Если разбор упал на сети или ответе провайдера, в `output` прогона `structure` появляется поле `error_detail` (в ответ `/ai/structure` оно не входит). Связь без генерации: `GET /llm/status?user_id=u_1` или кнопка «проверка связи» в журнале.
+
 Журнал показывается только владельцу записей. Прогоны `POST /ai/structure`, вызванного напрямую без `user_id`, владельца не имеют и в панели не видны — это контрактный эндпоинт для curl и Swagger.
 
 ## Переменные окружения
@@ -164,18 +178,27 @@ curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: applicat
 | `APP_NAME`               | `Foxfocus`                               | Заголовок API и Swagger                                                                      |
 | `DATABASE_URL`           | `sqlite+aiosqlite:///./data/foxfocus.db` | Настройка базы. Относительный путь считается от корня репозитория, а не от текущего каталога |
 | `SQLITE_BUSY_TIMEOUT_MS` | `5000`                                   | Ожидание снятия блокировки SQLite                                                            |
-| `LLM_MODE`               | `mock`                                   | `mock` — без сети. `live` — ProxyAPI или официальный OpenAI                                  |
+| `LLM_MODE`               | `mock`                                   | `mock` — без сети. `live` — ProxyAPI или официальный OpenAI. Без ключа приложение не падает, остаётся `mock` |
 | `PROXYAPI_KEY`           | пусто                                    | Если задан и не placeholder — провайдер `proxyapi`                                           |
 | `OPENAI_API_KEY`         | пусто                                    | Официальный ключ, если ProxyAPI не задан. Синоним: `OPENAI_KEY`                              |
 | `OPENAI_BASE_URL`        | пусто                                    | Свой base URL. Иначе `https://api.proxyapi.ru/openai/v1` или `https://api.openai.com/v1`     |
 | `OPENAI_MODEL`           | `gpt-5.4-mini`                           | Модель Chat Completions                                                                      |
-| `LLM_TIMEOUT_SECONDS`    | `25`                                     | Таймаут вызова модели. Сбой → `needs_review`, не пустой 500                                  |
+| `LLM_TIMEOUT_SECONDS`    | `60`                                     | Таймаут вызова модели. Сбой → `needs_review`, не пустой 500                                  |
 | `LLM_TEMPERATURE`        | `0.1`                                    | Температура 0–0.2                                                                            |
+| `STATIC_DIR`             | пусто                                    | Каталог собранной панели. Пусто — `frontend/dist` или `static/`                              |
 
 
 ## Данные
 
-База — файл `data/foxfocus.db`, вне git и вне образа. Путь меняется через `DATABASE_URL`.
+База — файл `data/foxfocus.db`, вне git и вне образа (в Docker — volume `./data`). Путь меняется через `DATABASE_URL`.
+
+Журнал прогонов — таблица `audit_runs`. Посмотреть последние строки:
+
+```bat
+python -c "import sqlite3, pprint; db=sqlite3.connect(r'data\foxfocus.db'); pprint.pp(db.execute('SELECT id, action, status, error, duration_ms FROM audit_runs ORDER BY id DESC LIMIT 10').fetchall())"
+```
+
+Ручная проверка (заголовок и приоритет, снятие `needs_review`): `python -m pytest tests/test_review.py` или в панели открыть карточку с меткой, поправить поля и нажать «Подтвердить проверку».
 
 Миграции создают пользователей `u_1` и `u_2`: пока аутентификации нет, их `user_id` передаётся в запросах, и каждый запрос читает только свои строки.
 
@@ -202,9 +225,11 @@ python -m ruff format --check .
 ```
 backend/app/          # настройки, движок базы, роутеры
 backend/migrations/   # Alembic
-frontend/             # Vite + React, в разработке на :5173
+frontend/             # Vite + React
 tests/                # pytest
-data/                 # файл SQLite, вне git
+data/                 # файл SQLite, вне git и вне образа
+Dockerfile            # multi-stage: Node собирает панель, Python отдаёт API и UI
+docker-compose.yml
 .env.example
 ```
 

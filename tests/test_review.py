@@ -103,6 +103,75 @@ async def test_review_rejects_blank_title(client):
     assert response.status_code == 422
 
 
+async def test_review_updates_and_clears_due_date(client, db_sessions):
+    captured = await capture(client, "завтра отправить счёт")
+    task_id = captured["item_id"]
+
+    listed = await client.get("/tasks", params={"user_id": "u_1"})
+    original = next(row for row in listed.json() if row["id"] == task_id)
+    assert original["due_date"] is not None
+
+    updated = await client.post(
+        f"/tasks/{task_id}/review",
+        json={
+            "user_id": "u_1",
+            "title": "Отправить счёт Иванову",
+            "priority": "high",
+            "due_date": "2026-10-01",
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["due_date"] == "2026-10-01"
+
+    cleared = await client.post(
+        f"/tasks/{task_id}/review",
+        json={
+            "user_id": "u_1",
+            "title": "Отправить счёт Иванову",
+            "priority": "high",
+            "due_date": None,
+        },
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["due_date"] is None
+
+    async with db_sessions() as session:
+        task = (await session.scalars(select(Task))).one()
+    assert task.due_date is None
+
+
+async def test_review_keeps_due_date_when_omitted(client):
+    captured = await capture(client, "завтра отправить счёт")
+    task_id = captured["item_id"]
+
+    listed = await client.get("/tasks", params={"user_id": "u_1"})
+    original = next(row for row in listed.json() if row["id"] == task_id)
+
+    response = await client.post(
+        f"/tasks/{task_id}/review",
+        json={"user_id": "u_1", "title": "Отправить счёт", "priority": "medium"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["due_date"] == original["due_date"]
+
+
+async def test_review_rejects_invalid_due_date(client):
+    captured = await capture(client, VAGUE_TASK)
+
+    response = await client.post(
+        f"/tasks/{captured['item_id']}/review",
+        json={
+            "user_id": "u_1",
+            "title": "Разобрать почту",
+            "priority": "medium",
+            "due_date": "послезавтра",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 async def test_note_review_clears_flag_and_is_audited(client, db_sessions):
     captured = await capture(client, INJECTION_NOTE)
     assert captured["item_type"] == "note"

@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from enum import StrEnum
 
@@ -10,6 +11,7 @@ from app.llm import LLMClient, LLMError, LLMTimeoutError
 from app.markers import INJECTION_MARKERS, VAGUE_MARKERS, contains, has_mixed_intents
 from app.schemas import StructuredItem
 
+logger = logging.getLogger("foxfocus")
 MAX_TEXT_LENGTH = 4000
 FALLBACK_TITLE_LENGTH = 120
 
@@ -67,11 +69,14 @@ async def structure_text(
         )
         raise error
 
-    item, reason = await _structure(text, llm)
+    item, reason, detail = await _structure(text, llm)
     if reason is not None:
         item = item.model_copy(update={"needs_review": True})
 
     response_payload = item.model_dump(mode="json")
+    if detail:
+        response_payload["error_detail"] = detail
+        logger.warning("llm %s: %s", reason, detail)
     await record_run(
         session,
         action=action,
@@ -85,28 +90,30 @@ async def structure_text(
     return item, reason
 
 
-async def _structure(text: str, llm: LLMClient) -> tuple[StructuredItem, ReviewCode | None]:
+async def _structure(
+    text: str, llm: LLMClient
+) -> tuple[StructuredItem, ReviewCode | None, str | None]:
     if not text.strip():
-        return _fallback_item(text), ReviewCode.EMPTY_INPUT
+        return _fallback_item(text), ReviewCode.EMPTY_INPUT, None
 
     try:
         raw = await llm.structure(text)
-    except LLMTimeoutError:
-        return _fallback_item(text), ReviewCode.LLM_TIMEOUT
-    except LLMError:
-        return _fallback_item(text), ReviewCode.LLM_ERROR
+    except LLMTimeoutError as exc:
+        return _fallback_item(text), ReviewCode.LLM_TIMEOUT, str(exc) or "таймаут"
+    except LLMError as exc:
+        return _fallback_item(text), ReviewCode.LLM_ERROR, str(exc) or "ошибка модели"
 
     try:
         payload = json.loads(raw)
     except (TypeError, ValueError):
-        return _fallback_item(text), ReviewCode.INVALID_JSON
+        return _fallback_item(text), ReviewCode.INVALID_JSON, None
 
     try:
         item = StructuredItem.model_validate(payload)
     except ValidationError:
-        return _fallback_item(text), ReviewCode.SCHEMA_MISMATCH
+        return _fallback_item(text), ReviewCode.SCHEMA_MISMATCH, None
 
-    return item, _review_reason(text, item)
+    return item, _review_reason(text, item), None
 
 
 def _review_reason(text: str, item: StructuredItem) -> ReviewCode | None:

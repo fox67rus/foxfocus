@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from sqlalchemy import select
 
 from app.deps import get_llm
-from app.llm import LLMTimeoutError
+from app.llm import LLMError, LLMTimeoutError
 from app.models import AuditRun
 from app.structuring import MAX_TEXT_LENGTH, ReviewCode
 
@@ -125,6 +125,23 @@ async def test_model_timeout_gives_review_not_empty_500(app, client, db_sessions
     run = await last_run(db_sessions)
     assert run.error == ReviewCode.LLM_TIMEOUT
     assert run.status == "error"
+    assert run.output["error_detail"] == "модель не ответила"
+    assert set(response.json()) == CONTRACT_FIELDS
+    assert "error_detail" not in response.json()
+
+
+async def test_llm_error_keeps_detail_in_audit_not_in_api(app, client, db_sessions):
+    use_llm(app, StubLLM(error=LLMError("сеть недоступна: ConnectTimeout")))
+
+    response = await client.post("/ai/structure", json={"text": "сделать потом"})
+
+    assert response.status_code == 200
+    assert set(response.json()) == CONTRACT_FIELDS
+    assert "error_detail" not in response.json()
+    run = await last_run(db_sessions)
+    assert run.error == ReviewCode.LLM_ERROR
+    assert run.output["error_detail"] == "сеть недоступна: ConnectTimeout"
+    assert "sk-" not in json.dumps(run.output)
 
 
 async def test_injection_does_not_change_schema_or_invent_deadline(client, db_sessions):

@@ -14,6 +14,7 @@ export function ItemCard() {
   const [runs, setRuns] = useState<AuditRun[]>([]);
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
+  const [dueDate, setDueDate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,7 @@ export function ItemCard() {
         if (found) {
           setTitle(found.title);
           setPriority(found.priority);
+          setDueDate(found.due_date ?? "");
         }
       } else {
         const notes = await listNotes(userId);
@@ -54,7 +56,8 @@ export function ItemCard() {
     setSaved(false);
     try {
       if (kind === "task") {
-        const updated = await reviewTask(itemId, userId, title, priority);
+        const updated = await reviewTask(itemId, userId, title, priority, dueDate || null);
+        setDueDate(updated.due_date ?? "");
         setTask(updated);
       } else {
         const updated = await reviewNote(itemId, userId, title);
@@ -123,18 +126,29 @@ export function ItemCard() {
           />
         </label>
         {kind === "task" ? (
-          <label className="block text-sm text-zinc-400">
-            приоритет
-            <select
-              className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
-              value={priority}
-              onChange={(event) => setPriority(event.target.value as Priority)}
-            >
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="high">high</option>
-            </select>
-          </label>
+          <>
+            <label className="block text-sm text-zinc-400">
+              срок
+              <input
+                type="date"
+                className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+              />
+            </label>
+            <label className="block text-sm text-zinc-400">
+              приоритет
+              <select
+                className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+                value={priority}
+                onChange={(event) => setPriority(event.target.value as Priority)}
+              >
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </label>
+          </>
         ) : null}
         <button type="submit" className="rounded bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-950">
           Подтвердить проверку

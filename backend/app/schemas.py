@@ -16,6 +16,16 @@ from app.models import (
 )
 
 
+class LlmStatusResponse(BaseModel):
+    status: Literal["ok", "error"]
+    mode: str
+    provider: str | None = None
+    base_url: str | None = None
+    model: str | None = None
+    detail: str | None = None
+    duration_ms: int = 0
+
+
 class StructureRequest(BaseModel):
     text: str
 
@@ -141,6 +151,7 @@ class TaskReviewRequest(BaseModel):
     user_id: str
     title: str = Field(min_length=1, max_length=500)
     priority: Priority
+    due_date: date | None = None
 
     @field_validator("title")
     @classmethod
@@ -149,6 +160,13 @@ class TaskReviewRequest(BaseModel):
         if not title:
             raise ValueError("заголовок не может быть пустым")
         return title
+
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def _empty_due_date(cls, value: object) -> object:
+        if value == "":
+            return None
+        return value
 
 
 class NoteReviewRequest(BaseModel):

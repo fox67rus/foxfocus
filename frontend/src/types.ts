@@ -34,6 +34,16 @@ export type Note = {
   source_text: string | null;
 };
 
+export type LlmStatus = {
+  status: "ok" | "error";
+  mode: string;
+  provider: string | null;
+  base_url: string | null;
+  model: string | null;
+  detail: string | null;
+  duration_ms: number;
+};
+
 export type AuditRun = {
   id: number;
   created_at: string;

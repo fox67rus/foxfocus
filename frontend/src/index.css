@@ -18,3 +18,79 @@ select,
 button {
   font: inherit;
 }
+
+.note-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.75rem 1.25rem;
+  padding: 0.75rem 0.25rem 1.5rem;
+}
+
+.note-sticker {
+  position: relative;
+  display: flex;
+  min-height: 10rem;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-radius: 2px;
+  padding: 1.35rem 1.1rem 1rem;
+  color: #3f2a14;
+  text-decoration: none;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 45%) inset,
+    0 10px 18px rgb(0 0 0 / 28%);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.note-sticker::before {
+  content: "";
+  position: absolute;
+  top: -0.45rem;
+  left: 50%;
+  width: 42%;
+  height: 0.7rem;
+  transform: translateX(-50%) rotate(-2deg);
+  background: rgb(255 255 255 / 40%);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
+
+.note-board > li:nth-child(4n + 1) .note-sticker {
+  background: #f5d76e;
+  transform: rotate(-1.6deg);
+}
+
+.note-board > li:nth-child(4n + 2) .note-sticker {
+  background: #f8b4b4;
+  transform: rotate(1.3deg);
+}
+
+.note-board > li:nth-child(4n + 3) .note-sticker {
+  background: #9fd8f5;
+  transform: rotate(-0.7deg);
+}
+
+.note-board > li:nth-child(4n + 4) .note-sticker {
+  background: #c6e48b;
+  transform: rotate(1deg);
+}
+
+.note-board > li .note-sticker:hover {
+  z-index: 1;
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 45%) inset,
+    0 16px 24px rgb(0 0 0 / 32%);
+}
+
+.note-sticker-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.note-sticker-meta {
+  margin-top: auto;
+  font-size: 0.7rem;
+  color: rgb(63 42 20 / 65%);
+}

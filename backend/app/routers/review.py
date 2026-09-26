@@ -17,7 +17,7 @@ async def review_task(
     payload: TaskReviewRequest,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> TaskOut:
-    request_payload = payload.model_dump() | {"task_id": task_id}
+    request_payload = payload.model_dump(mode="json") | {"task_id": task_id}
     async with Journal(session, "update", request_payload) as journal:
         user = await require_user(session, payload.user_id)
         journal.user_id = user.id
@@ -25,6 +25,8 @@ async def review_task(
         task = await require_task(session, user.id, task_id)
         task.title = payload.title
         task.priority = payload.priority
+        if "due_date" in payload.model_fields_set:
+            task.due_date = payload.due_date
         task.needs_review = False
         task.review_reason = None
         await session.commit()

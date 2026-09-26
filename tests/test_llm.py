@@ -9,8 +9,10 @@ from app.llm import (
     LLMTimeoutError,
     MockLLM,
     OpenAILLM,
+    describe_exception,
     describe_llm,
     get_llm_client,
+    redact_secrets,
     resolve_provider,
 )
 from app.structuring import ReviewCode
@@ -54,6 +56,12 @@ class _FakeCompletions:
 class _FakeClient:
     def __init__(self, completions: _FakeCompletions):
         self.chat = type("Chat", (), {"completions": completions})()
+
+
+def test_redact_secrets_strips_keys():
+    text = describe_exception(ValueError("Authorization Bearer sk-secret-must-go"))
+    assert "sk-secret-must-go" not in text
+    assert "[redacted]" in redact_secrets("sk-abc123456789")
 
 
 def test_pytest_default_client_is_mock():
@@ -107,6 +115,21 @@ def test_custom_base_url_overrides_default():
 def test_live_mode_without_key_raises():
     with pytest.raises(ValueError, match="ключ"):
         get_llm_client(_settings())
+
+
+async def test_startup_live_without_key_falls_back_to_mock(migrated_db):
+    from httpx import ASGITransport, AsyncClient
+
+    from app.main import create_app
+
+    live_app = create_app(_settings(database_url=sqlite_url(migrated_db)))
+    transport = ASGITransport(app=live_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        async with live_app.router.lifespan_context(live_app):
+            assert isinstance(live_app.state.llm, MockLLM)
+            response = await ac.get("/health")
+
+    assert response.status_code == 200
 
 
 def test_startup_log_has_provider_and_no_key():

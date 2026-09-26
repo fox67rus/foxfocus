@@ -6,8 +6,10 @@ from fastapi import FastAPI
 
 from app.config import Settings, get_settings
 from app.db import create_db_engine, create_session_factory
-from app.llm import describe_llm, get_llm_client
+from app.llm import MockLLM, describe_llm, get_llm_client
+from app.paths import resolve_static_dir
 from app.routers import ai, capture, health, panel, review, tasks
+from app.spa import mount_spa
 
 logger = logging.getLogger("foxfocus")
 
@@ -18,9 +20,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     engine = create_db_engine(settings.database_url, settings.sqlite_busy_timeout_ms)
     app.state.db_engine = engine
     app.state.session_factory = create_session_factory(engine)
-    app.state.llm = get_llm_client(settings)
+    try:
+        app.state.llm = get_llm_client(settings)
+        logger.info("%s", describe_llm(settings))
+    except ValueError as exc:
+        # Docker видит только .env: ключ из переменных Windows туда не попадает.
+        logger.warning("%s; llm: mock", exc)
+        app.state.llm = MockLLM()
     logger.info("database: %s", engine.url.render_as_string(hide_password=True))
-    logger.info("%s", describe_llm(settings))
     try:
         yield
     finally:
@@ -38,6 +45,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tasks.router)
     app.include_router(review.router)
     app.include_router(panel.router)
+    static_dir = resolve_static_dir(settings.static_dir)
+    if static_dir is not None:
+        mount_spa(app, static_dir)
+        logger.info("static: %s", static_dir)
     return app
 
 

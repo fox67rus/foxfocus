@@ -6,6 +6,7 @@ import { useState } from "react";
 const LINKS = [
   { to: "/", label: "Входящие" },
   { to: "/tasks", label: "Задачи" },
+  { to: "/notes", label: "Заметки" },
   { to: "/journal", label: "Журнал" },
 ];
 
@@ -13,7 +14,7 @@ export function Layout() {
   const [userId, setUser] = useState(getUserId);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-4">
+    <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <div className="flex items-baseline gap-6">
           <span className="text-sm font-semibold tracking-wide text-zinc-200">Foxfocus</span>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { getUserId, listAudit } from "../api";
+import { getUserId, listAudit, pingLlm } from "../api";
 import { downloadText, toCsv, toJson } from "../export";
-import type { AuditRun } from "../types";
+import type { AuditRun, LlmStatus } from "../types";
 
 export function Journal() {
   const userId = getUserId();
@@ -10,6 +10,8 @@ export function Journal() {
   const [onlyErrors, setOnlyErrors] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [llm, setLlm] = useState<LlmStatus | null>(null);
+  const [llmBusy, setLlmBusy] = useState(false);
 
   useEffect(() => {
     listAudit(userId)
@@ -18,6 +20,20 @@ export function Journal() {
   }, [userId]);
 
   const visible = onlyErrors ? runs.filter((run) => run.status === "error" || run.error) : runs;
+
+  async function checkLlm() {
+    setLlmBusy(true);
+    setError(null);
+    try {
+      const status = await pingLlm(userId);
+      setLlm(status);
+      setRuns(await listAudit(userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "не удалось проверить связь");
+    } finally {
+      setLlmBusy(false);
+    }
+  }
 
   function exportRows(kind: "json" | "csv") {
     const rows = visible.map((run) => ({
@@ -48,6 +64,24 @@ export function Journal() {
           />
           только с ошибкой
         </label>
+        <button
+          type="button"
+          className="text-zinc-400 hover:text-zinc-200"
+          onClick={() => void checkLlm()}
+          disabled={llmBusy}
+        >
+          {llmBusy ? "проверяю связь…" : "проверка связи"}
+        </button>
+        {llm ? (
+          <span className={llm.status === "ok" ? "text-emerald-400" : "text-amber-300"}>
+            {llm.mode}
+            {llm.provider ? ` · ${llm.provider}` : ""}
+            {llm.model ? ` · ${llm.model}` : ""}
+            {llm.status === "ok" ? " · ок" : " · нет связи"}
+            {` · ${llm.duration_ms} мс`}
+            {llm.detail ? ` · ${llm.detail}` : ""}
+          </span>
+        ) : null}
         <button type="button" className="text-zinc-400 hover:text-zinc-200" onClick={() => exportRows("json")}>
           JSON
         </button>
@@ -76,13 +110,18 @@ export function Journal() {
               <span className="text-xs text-zinc-600">{openId === run.id ? "скрыть" : "открыть"}</span>
             </button>
             {openId === run.id ? (
-              <div className="mt-3 grid gap-3 text-xs md:grid-cols-2">
-                <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-zinc-300">
-                  {pretty(run.input)}
-                </pre>
-                <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-zinc-300">
-                  {pretty(run.output)}
-                </pre>
+              <div className="mt-3 space-y-2">
+                {errorDetail(run.output) ? (
+                  <p className="text-xs text-amber-300">{errorDetail(run.output)}</p>
+                ) : null}
+                <div className="grid gap-3 text-xs md:grid-cols-2">
+                  <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-zinc-300">
+                    {pretty(run.input)}
+                  </pre>
+                  <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-zinc-300">
+                    {pretty(run.output)}
+                  </pre>
+                </div>
               </div>
             ) : null}
           </li>
@@ -95,4 +134,12 @@ export function Journal() {
 
 function pretty(value: unknown): string {
   return JSON.stringify(value, null, 2);
+}
+
+function errorDetail(value: unknown): string | null {
+  if (value && typeof value === "object" && "error_detail" in value) {
+    const detail = (value as { error_detail?: unknown }).error_detail;
+    return typeof detail === "string" ? detail : null;
+  }
+  return null;
 }

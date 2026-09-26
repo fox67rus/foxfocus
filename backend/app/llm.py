@@ -1,8 +1,11 @@
 import json
 import re
+import time
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, Protocol
+
+import httpx
 
 from openai import APIConnectionError, APIError, APITimeoutError, AsyncOpenAI
 
@@ -32,6 +35,35 @@ class LLMClient(Protocol):
         """Возвращает сырой ответ модели — его ещё предстоит разобрать и проверить."""
         ...
 
+    async def ping(self) -> dict[str, Any]:
+        """Лёгкая проверка связи: без генерации, без ключа в ответе."""
+        ...
+
+
+SECRET_RE = re.compile(r"(?i)(sk-[A-Za-z0-9_\-]{8,}|Bearer\s+\S+)")
+PING_TIMEOUT_SECONDS = 8.0
+
+
+def redact_secrets(text: str) -> str:
+    return SECRET_RE.sub("[redacted]", text)
+
+
+def describe_exception(exc: BaseException) -> str:
+    """Короткий текст ошибки с причиной, без ключей."""
+    chunks: list[str] = []
+    current: BaseException | None = exc
+    seen = 0
+    while current is not None and seen < 3:
+        name = type(current).__name__
+        message = str(current).strip()
+        if message and message != name:
+            chunks.append(f"{name}: {message}")
+        else:
+            chunks.append(name)
+        current = current.__cause__ or current.__context__
+        seen += 1
+    return redact_secrets(" ← ".join(chunks))[:400]
+
 
 ISO_DATE = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 TITLE_MAX_LENGTH = 120
@@ -45,6 +77,17 @@ class MockLLM:
 
     async def structure(self, text: str) -> str:
         return json.dumps(self._draft(text), ensure_ascii=False)
+
+    async def ping(self) -> dict[str, Any]:
+        return {
+            "status": "ok",
+            "mode": "mock",
+            "provider": "mock",
+            "base_url": None,
+            "model": None,
+            "detail": None,
+            "duration_ms": 0,
+        }
 
     def _draft(self, text: str) -> dict[str, Any]:
         lowered = text.lower()
@@ -195,16 +238,46 @@ class OpenAILLM:
                 ],
             )
         except APITimeoutError as exc:
-            raise LLMTimeoutError("модель не ответила за отведённое время") from exc
+            raise LLMTimeoutError(describe_exception(exc)) from exc
         except APIConnectionError as exc:
-            raise LLMError("сеть недоступна") from exc
+            raise LLMError(f"сеть недоступна: {describe_exception(exc)}") from exc
         except APIError as exc:
-            raise LLMError(str(exc)) from exc
+            raise LLMError(describe_exception(exc)) from exc
 
         content = response.choices[0].message.content
         if not content:
             raise LLMError("пустой ответ модели")
         return content
+
+    async def ping(self) -> dict[str, Any]:
+        started = time.perf_counter()
+        url = self.provider.base_url.rstrip("/") + "/models"
+        try:
+            async with httpx.AsyncClient(timeout=PING_TIMEOUT_SECONDS) as client:
+                response = await client.get(
+                    url,
+                    headers={"Authorization": f"Bearer {self.provider.api_key}"},
+                )
+        except Exception as exc:
+            return {
+                "status": "error",
+                "mode": "live",
+                "provider": self.provider.name,
+                "base_url": self.provider.base_url,
+                "model": self._model,
+                "detail": describe_exception(exc),
+                "duration_ms": int((time.perf_counter() - started) * 1000),
+            }
+        detail = None if response.is_success else redact_secrets(f"HTTP {response.status_code}")
+        return {
+            "status": "ok" if response.is_success else "error",
+            "mode": "live",
+            "provider": self.provider.name,
+            "base_url": self.provider.base_url,
+            "model": self._model,
+            "detail": detail,
+            "duration_ms": int((time.perf_counter() - started) * 1000),
+        }
 
 
 def get_llm_client(settings: Settings) -> LLMClient:
@@ -213,6 +286,21 @@ def get_llm_client(settings: Settings) -> LLMClient:
     if settings.llm_mode == "live":
         return OpenAILLM(settings)
     raise ValueError(f"неизвестный LLM_MODE: {settings.llm_mode}")
+
+
+async def ping_llm(llm: Any, settings: Settings) -> dict[str, Any]:
+    ping = getattr(llm, "ping", None)
+    if ping is not None:
+        return await ping()
+    return {
+        "status": "ok",
+        "mode": settings.llm_mode,
+        "provider": None,
+        "base_url": None,
+        "model": None,
+        "detail": None,
+        "duration_ms": 0,
+    }
 
 
 def describe_llm(settings: Settings) -> str:

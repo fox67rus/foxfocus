@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5.4-mini"
     llm_timeout_seconds: float = 25
     llm_temperature: float = Field(default=0.1, ge=0, le=0.2)
+    # Пусто — ищем frontend/dist или static/ у корня репозитория.
+    static_dir: str = ""
 
     @field_validator("database_url")
     @classmethod

@@ -1,4 +1,4 @@
-import type { AuditRun, CaptureResponse, Note, Priority, Task, TaskFilter } from "./types";
+import type { AuditRun, CaptureResponse, LlmStatus, Note, Priority, Task, TaskFilter } from "./types";
 
 export const USER_STORAGE_KEY = "foxfocus.user_id";
 
@@ -57,10 +57,11 @@ export function reviewTask(
   userId: string,
   title: string,
   priority: Priority,
+  dueDate: string | null,
 ): Promise<Task> {
   return request(`/tasks/${taskId}/review`, {
     method: "POST",
-    body: JSON.stringify({ user_id: userId, title, priority }),
+    body: JSON.stringify({ user_id: userId, title, priority, due_date: dueDate }),
   });
 }
 
@@ -77,4 +78,8 @@ export function reviewNote(noteId: number, userId: string, title: string): Promi
 
 export function listAudit(userId: string): Promise<AuditRun[]> {
   return request(`/audit?${new URLSearchParams({ user_id: userId })}`);
+}
+
+export function pingLlm(userId: string): Promise<LlmStatus> {
+  return request(`/llm/status?${new URLSearchParams({ user_id: userId })}`);
 }
