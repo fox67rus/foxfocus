@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import (
     AuditRun,
@@ -135,3 +135,30 @@ class AuditRunOut(BaseModel):
 
 # Фильтр ТЗ: open — всё, что не done.
 TaskFilter = Literal["open", "done"]
+
+
+class TaskReviewRequest(BaseModel):
+    user_id: str
+    title: str = Field(min_length=1, max_length=500)
+    priority: Priority
+
+    @field_validator("title")
+    @classmethod
+    def _title_not_blank(cls, value: str) -> str:
+        title = value.strip()
+        if not title:
+            raise ValueError("заголовок не может быть пустым")
+        return title
+
+
+class NoteReviewRequest(BaseModel):
+    user_id: str
+    title: str = Field(min_length=1, max_length=500)
+
+    @field_validator("title")
+    @classmethod
+    def _title_not_blank(cls, value: str) -> str:
+        title = value.strip()
+        if not title:
+            raise ValueError("заголовок не может быть пустым")
+        return title

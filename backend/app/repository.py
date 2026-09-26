@@ -42,6 +42,14 @@ async def require_task(session: AsyncSession, user_id: int, task_id: int) -> Tas
     return task
 
 
+async def require_note(session: AsyncSession, user_id: int, note_id: int) -> Note:
+    query = select(Note).where(Note.id == note_id, Note.user_id == user_id)
+    note = (await session.scalars(query)).first()
+    if note is None:
+        raise not_found()
+    return note
+
+
 async def list_notes(session: AsyncSession, user_id: int, limit: int) -> Sequence[Note]:
     query = select(Note).where(Note.user_id == user_id).order_by(Note.id.desc()).limit(limit)
     return (await session.scalars(query)).all()

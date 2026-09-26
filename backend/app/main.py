@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from app.config import Settings, get_settings
 from app.db import create_db_engine, create_session_factory
 from app.llm import get_llm_client
-from app.routers import ai, capture, health, panel, tasks
+from app.routers import ai, capture, health, panel, review, tasks
 
 logger = logging.getLogger("foxfocus")
 
@@ -36,6 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ai.router)
     app.include_router(capture.router)
     app.include_router(tasks.router)
+    app.include_router(review.router)
     app.include_router(panel.router)
     return app
 

@@ -19,7 +19,7 @@
 - [x] Схема данных: `users`, `tasks`, `notes`, `memory_facts`, `audit_runs`, сид пользователей `u_1` и `u_2`
 - [x] Разбор текста: `POST /ai/structure` со строгой схемой и журналом причин
 - [x] Входящие и витрина: `POST /capture`, `GET /tasks`, `POST /tasks/{id}/done`, `GET /notes`, `GET /audit`
-- [ ] Ручная правка записей с `needs_review`
+- [x] Ручная правка записей с `needs_review`
 - [ ] Веб-панель, экспорт в JSON и CSV
 - [ ] Сборка в один контейнер
 
@@ -67,6 +67,7 @@ curl.exe -X POST http://127.0.0.1:8000/ai/structure -H "Content-Type: applicatio
 curl.exe -X POST http://127.0.0.1:8000/capture -H "Content-Type: application/json" -d "{\"text\": \"оплатить хостинг\", \"user_id\": \"u_1\"}"
 curl.exe "http://127.0.0.1:8000/tasks?user_id=u_1&status=open"
 curl.exe -X POST http://127.0.0.1:8000/tasks/1/done -H "Content-Type: application/json" -d "{\"user_id\": \"u_1\"}"
+curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: application/json" -d "{\"user_id\": \"u_1\", \"title\": \"Разобрать почту\", \"priority\": \"high\"}"
 ```
 
 В PowerShell вызывай `curl.exe`: короткое `curl` там псевдоним `Invoke-WebRequest`.
@@ -81,15 +82,17 @@ curl.exe -X POST http://127.0.0.1:8000/tasks/1/done -H "Content-Type: applicatio
 | POST  | `/capture`            | Разобрать текст и сохранить задачу или заметку               |
 | GET   | `/tasks`              | Задачи пользователя, фильтр `status=open\|done`              |
 | POST  | `/tasks/{id}/done`    | Закрыть задачу, идемпотентно                                 |
+| POST  | `/tasks/{id}/review`  | Поправить заголовок и приоритет, снять `needs_review`        |
 | GET   | `/notes`              | Заметки пользователя, последние 50                           |
+| POST  | `/notes/{id}/review`  | Поправить заголовок заметки, снять `needs_review`            |
 | GET   | `/audit`              | Журнал прогонов пользователя, последние 100                  |
 
 
-Все запросы идут в разрезе пользователя: `user_id` передаётся в теле (`/capture`, `/tasks/{id}/done`) или в query (`/tasks`, `/notes`, `/audit`). Пока аутентификации нет, доступны засеянные `u_1` и `u_2`. Чужая или несуществующая запись отвечает `404`, а не `403`, чтобы наружу не утекало само её существование. Время в ответах — UTC с явной зоной.
+Все запросы идут в разрезе пользователя: `user_id` передаётся в теле (`/capture`, `/tasks/{id}/done`, `/tasks/{id}/review`, `/notes/{id}/review`) или в query (`/tasks`, `/notes`, `/audit`). Пока аутентификации нет, доступны засеянные `u_1` и `u_2`. Чужая или несуществующая запись отвечает `404`, а не `403`, чтобы наружу не утекало само её существование. Время в ответах — UTC с явной зоной.
 
 `status=open` возвращает всё, что не `done`. Повторный `POST /tasks/{id}/done` по закрытой задаче тоже отвечает `{"status":"ok"}`.
 
-Остальные эндпоинты добавляются в таблицу по мере готовности.
+Ручная проверка: `POST /tasks/{id}/review` принимает `title` и `priority` (`low|medium|high`), снимает `needs_review` и очищает `review_reason`. У заметки приоритета нет — правится только `title`. Прогон пишется в журнал отдельным действием `update`, рядом с исходным `capture`, а не вместо него.
 
 ## Разбор текста и `needs_review`
 
