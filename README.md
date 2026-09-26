@@ -22,7 +22,7 @@
 - [x] Ручная правка записей с `needs_review`
 - [x] Десять фиксированных входов: `tests_data/inputs.jsonl`
 - [x] Живой LLM: ProxyAPI или OpenAI по env, в тестах остаётся `LLM_MODE=mock`
-- [ ] Веб-панель, экспорт в JSON и CSV
+- [x] Веб-панель: Входящие / Задачи / Журнал / карточка, экспорт JSON и CSV
 - [ ] Сборка в один контейнер
 
 ## Установка
@@ -46,6 +46,16 @@ cd backend
 alembic upgrade head
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
+Панель (отдельный процесс, пока API уже запущен):
+
+```bat
+cd frontend
+npm install
+npm run dev
+```
+
+Открыть http://127.0.0.1:5173. Запросы к API проксируются на порт 8000.
 
 Swagger — [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
@@ -192,6 +202,7 @@ python -m ruff format --check .
 ```
 backend/app/          # настройки, движок базы, роутеры
 backend/migrations/   # Alembic
+frontend/             # Vite + React, в разработке на :5173
 tests/                # pytest
 data/                 # файл SQLite, вне git
 .env.example
