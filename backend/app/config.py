@@ -38,9 +38,9 @@ class Settings(BaseSettings):
         path = Path(url.database)
         if path.is_absolute():
             return value
-        return url.set(database=(PROJECT_DIR / path).resolve().as_posix()).render_as_string(
-            hide_password=False
-        )
+        absolute = (PROJECT_DIR / path).resolve().as_posix()
+        # Собираем строку руками: render_as_string экранирует двоеточие диска в C%3A.
+        return f"{url.drivername}:///{absolute}"
 
 
 @lru_cache

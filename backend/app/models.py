@@ -35,6 +35,11 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def as_utc(value: datetime) -> datetime:
+    """SQLite отдаёт время без зоны, а хранится оно в UTC — возвращаем это клиенту явно."""
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
+
+
 def _in_values(column: str, values: tuple[str, ...]) -> str:
     allowed = ", ".join(f"'{value}'" for value in values)
     return f"{column} IN ({allowed})"
