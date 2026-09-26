@@ -14,8 +14,18 @@ export function toCsv(rows: Record<string, unknown>[]): string {
   return `${lines.join("\n")}\n`;
 }
 
+const CSV_BOM = "\uFEFF";
+
+/** Excel на Windows без BOM читает UTF-8 как системную кодировку. */
+export function withCsvBom(body: string): string {
+  return body.startsWith(CSV_BOM) ? body : `${CSV_BOM}${body}`;
+}
+
 export function downloadText(filename: string, body: string, mime: string): void {
-  const blob = new Blob([body], { type: mime });
+  const csv = mime.includes("csv") || filename.endsWith(".csv");
+  const payload = csv ? withCsvBom(body) : body;
+  const type = csv ? "text/csv;charset=utf-8" : mime;
+  const blob = new Blob([payload], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

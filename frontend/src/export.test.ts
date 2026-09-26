@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toCsv, toJson } from "./export";
+import { toCsv, toJson, withCsvBom } from "./export";
 
 describe("export", () => {
   it("writes json and csv for a task row", () => {
@@ -8,5 +8,14 @@ describe("export", () => {
 
     expect(toJson(rows)).toContain('"title": "купить кофе"');
     expect(toCsv(rows)).toBe('id,title,needs_review\n"1","купить кофе","false"\n');
+  });
+
+  it("prefixes csv with utf-8 bom for excel on windows", () => {
+    const csv = toCsv([{ title: "купить кофе" }]);
+    const file = withCsvBom(csv);
+
+    expect(file.startsWith("\uFEFF")).toBe(true);
+    expect(file).toContain("купить кофе");
+    expect(withCsvBom(file)).toBe(file);
   });
 });
