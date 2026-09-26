@@ -7,13 +7,31 @@ _TESTS_DB_DIR = Path(tempfile.mkdtemp(prefix="foxfocus-tests-"))
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{(_TESTS_DB_DIR / 'app.db').as_posix()}"
 
 import pytest  # noqa: E402
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 from app.main import create_app  # noqa: E402
+from app.paths import BACKEND_DIR  # noqa: E402
 
 
 def sqlite_url(path: Path) -> str:
     return f"sqlite+aiosqlite:///{path.as_posix()}"
+
+
+def alembic_config(url: str) -> Config:
+    config = Config(str(BACKEND_DIR / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
+    config.set_main_option("sqlalchemy.url", url)
+    return config
+
+
+@pytest.fixture
+def migrated_db(tmp_path: Path) -> Path:
+    """Файл базы, на который накачены все миграции."""
+    db_path = tmp_path / "migrated.db"
+    command.upgrade(alembic_config(sqlite_url(db_path)), "head")
+    return db_path
 
 
 @pytest.fixture

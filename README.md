@@ -16,7 +16,7 @@
 ## Статус
 
 - [x] Каркас API, настройки из окружения, движок SQLite (`WAL`, `foreign_keys=ON`, `busy_timeout`), миграции Alembic, `GET /health`
-- [ ] Схема данных: `users`, `tasks`, `notes`, `memory_facts`, `audit_runs`
+- [x] Схема данных: `users`, `tasks`, `notes`, `memory_facts`, `audit_runs`, сид пользователей `u_1` и `u_2`
 - [ ] Разбор текста: `POST /ai/structure`
 - [ ] Входящие и витрина: `POST /capture`, `GET /tasks`, `POST /tasks/{id}/done`
 - [ ] Ручная правка записей с `needs_review`
@@ -82,6 +82,8 @@ curl.exe http://127.0.0.1:8000/health
 ## Данные
 
 База — файл `data/foxfocus.db`, вне git и вне образа. Путь меняется через `DATABASE_URL`.
+
+Миграции создают пользователей `u_1` и `u_2`: пока аутентификации нет, их `user_id` передаётся в запросах, и каждый запрос читает только свои строки.
 
 Список таблиц (из корня репозитория) и текущая версия миграций:
 
