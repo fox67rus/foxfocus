@@ -21,6 +21,7 @@
 - [x] Входящие и витрина: `POST /capture`, `GET /tasks`, `POST /tasks/{id}/done`, `GET /notes`, `GET /audit`
 - [x] Ручная правка записей с `needs_review`
 - [x] Десять фиксированных входов: `tests_data/inputs.jsonl`
+- [x] Живой LLM: ProxyAPI или OpenAI по env, в тестах остаётся `LLM_MODE=mock`
 - [ ] Веб-панель, экспорт в JSON и CSV
 - [ ] Сборка в один контейнер
 
@@ -153,7 +154,13 @@ curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: applicat
 | `APP_NAME`               | `Foxfocus`                               | Заголовок API и Swagger                                                                      |
 | `DATABASE_URL`           | `sqlite+aiosqlite:///./data/foxfocus.db` | Настройка базы. Относительный путь считается от корня репозитория, а не от текущего каталога |
 | `SQLITE_BUSY_TIMEOUT_MS` | `5000`                                   | Ожидание снятия блокировки SQLite                                                            |
-| `LLM_MODE`               | `mock`                                   | Режим разбора. `mock` — детерминированные правила без сети и ключей                          |
+| `LLM_MODE`               | `mock`                                   | `mock` — без сети. `live` — ProxyAPI или официальный OpenAI                                  |
+| `PROXYAPI_KEY`           | пусто                                    | Если задан и не placeholder — провайдер `proxyapi`                                           |
+| `OPENAI_API_KEY`         | пусто                                    | Официальный ключ, если ProxyAPI не задан. Синоним: `OPENAI_KEY`                              |
+| `OPENAI_BASE_URL`        | пусто                                    | Свой base URL. Иначе `https://api.proxyapi.ru/openai/v1` или `https://api.openai.com/v1`     |
+| `OPENAI_MODEL`           | `gpt-5.4-mini`                           | Модель Chat Completions                                                                      |
+| `LLM_TIMEOUT_SECONDS`    | `25`                                     | Таймаут вызова модели. Сбой → `needs_review`, не пустой 500                                  |
+| `LLM_TEMPERATURE`        | `0.1`                                    | Температура 0–0.2                                                                            |
 
 
 ## Данные
@@ -178,7 +185,7 @@ python -m ruff check .
 python -m ruff format --check .
 ```
 
-Тесты работают на том же движке SQLite, пишут во временный файл и в сеть не ходят.
+Тесты работают на том же движке SQLite, пишут во временный файл и в сеть не ходят. Живой вызов модели — только `LLM_E2E=1` плюс рабочий ключ: `set LLM_E2E=1` и `python -m pytest tests/test_llm.py -k live_structure`.
 
 ## Структура
 

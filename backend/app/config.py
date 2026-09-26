@@ -23,8 +23,15 @@ class Settings(BaseSettings):
     app_name: str = "Foxfocus"
     database_url: str = Field(default_factory=_default_database_url)
     sqlite_busy_timeout_ms: int = 5000
-    # Пока живого адаптера нет, разбор идёт детерминированным моком без сети.
+    # mock — детерминированные правила без сети. live — ProxyAPI или официальный OpenAI.
     llm_mode: str = "mock"
+    proxyapi_key: str = ""
+    openai_api_key: str = ""
+    openai_key: str = ""
+    openai_base_url: str = ""
+    openai_model: str = "gpt-5.4-mini"
+    llm_timeout_seconds: float = 25
+    llm_temperature: float = Field(default=0.1, ge=0, le=0.2)
 
     @field_validator("database_url")
     @classmethod

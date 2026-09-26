@@ -2,9 +2,10 @@ import os
 import tempfile
 from pathlib import Path
 
-# Приложение читает DATABASE_URL при старте, поэтому подменяем до импорта app.
+# Приложение читает DATABASE_URL и LLM_MODE при старте — тесты всегда на моке, без сети.
 _TESTS_DB_DIR = Path(tempfile.mkdtemp(prefix="foxfocus-tests-"))
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{(_TESTS_DB_DIR / 'app.db').as_posix()}"
+os.environ["LLM_MODE"] = "mock"
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402

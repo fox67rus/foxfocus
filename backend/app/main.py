@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from app.config import Settings, get_settings
 from app.db import create_db_engine, create_session_factory
-from app.llm import get_llm_client
+from app.llm import describe_llm, get_llm_client
 from app.routers import ai, capture, health, panel, review, tasks
 
 logger = logging.getLogger("foxfocus")
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.session_factory = create_session_factory(engine)
     app.state.llm = get_llm_client(settings)
     logger.info("database: %s", engine.url.render_as_string(hide_password=True))
-    logger.info("llm mode: %s", settings.llm_mode)
+    logger.info("%s", describe_llm(settings))
     try:
         yield
     finally:
