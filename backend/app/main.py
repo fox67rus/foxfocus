@@ -6,7 +6,8 @@ from fastapi import FastAPI
 
 from app.config import Settings, get_settings
 from app.db import create_db_engine, create_session_factory
-from app.routers import health
+from app.llm import get_llm_client
+from app.routers import ai, health
 
 logger = logging.getLogger("foxfocus")
 
@@ -17,7 +18,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     engine = create_db_engine(settings.database_url, settings.sqlite_busy_timeout_ms)
     app.state.db_engine = engine
     app.state.session_factory = create_session_factory(engine)
+    app.state.llm = get_llm_client(settings)
     logger.info("database: %s", engine.url.render_as_string(hide_password=True))
+    logger.info("llm mode: %s", settings.llm_mode)
     try:
         yield
     finally:
@@ -30,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
     app.state.settings = settings
     app.include_router(health.router)
+    app.include_router(ai.router)
     return app
 
 

@@ -17,7 +17,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
+ItemType = Literal["task", "note"]
 Priority = Literal["low", "medium", "high"]
+Confidence = Literal["high", "medium", "low"]
 TaskStatus = Literal["todo", "in_progress", "done"]
 RunStatus = Literal["ok", "error"]
 
@@ -140,6 +142,8 @@ __all__ = [
     "TASK_STATUSES",
     "TITLE_MAX_LENGTH",
     "AuditRun",
+    "Confidence",
+    "ItemType",
     "MemoryFact",
     "Note",
     "Priority",

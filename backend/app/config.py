@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     app_name: str = "Foxfocus"
     database_url: str = Field(default_factory=_default_database_url)
     sqlite_busy_timeout_ms: int = 5000
+    # Пока живого адаптера нет, разбор идёт детерминированным моком без сети.
+    llm_mode: str = "mock"
 
     @field_validator("database_url")
     @classmethod
