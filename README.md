@@ -107,8 +107,10 @@ curl.exe -X POST http://127.0.0.1:8000/tasks/1/review -H "Content-Type: applicat
 | GET   | `/tasks`              | Задачи пользователя, фильтр `status=open\|done`              |
 | POST  | `/tasks/{id}/done`    | Закрыть задачу, идемпотентно                                 |
 | POST  | `/tasks/{id}/review`  | Поправить заголовок и приоритет, снять `needs_review`        |
+| POST  | `/tasks/{id}/delete`  | Удалить задачу. Чужое и несуществующее — 404                 |
 | GET   | `/notes`              | Заметки пользователя, последние 50                           |
 | POST  | `/notes/{id}/review`  | Поправить заголовок заметки, снять `needs_review`            |
+| POST  | `/notes/{id}/delete`  | Удалить заметку. Чужое и несуществующее — 404                |
 | GET   | `/audit`              | Журнал прогонов пользователя, последние 100                  |
 
 

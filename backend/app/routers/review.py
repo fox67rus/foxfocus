@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.audit import Journal
 from app.deps import get_session
 from app.repository import require_note, require_task, require_user
-from app.schemas import NoteOut, NoteReviewRequest, TaskOut, TaskReviewRequest
+from app.schemas import DoneRequest, NoteOut, NoteReviewRequest, StatusResponse, TaskOut, TaskReviewRequest
 
 router = APIRouter(tags=["review"])
 
@@ -56,5 +56,25 @@ async def review_note(
         await session.refresh(note)
 
         response = NoteOut.from_model(note)
+        journal.response = response.model_dump(mode="json")
+        return response
+
+
+@router.post("/notes/{note_id}/delete", response_model=StatusResponse)
+async def delete_note(
+    note_id: int,
+    payload: DoneRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> StatusResponse:
+    request_payload = {"note_id": note_id, "user_id": payload.user_id}
+    async with Journal(session, "delete", request_payload) as journal:
+        user = await require_user(session, payload.user_id)
+        journal.user_id = user.id
+
+        note = await require_note(session, user.id, note_id)
+        await session.delete(note)
+        await session.commit()
+
+        response = StatusResponse(status="ok")
         journal.response = response.model_dump(mode="json")
         return response

@@ -80,6 +80,20 @@ export function listAudit(userId: string): Promise<AuditRun[]> {
   return request(`/audit?${new URLSearchParams({ user_id: userId })}`);
 }
 
+export function deleteTask(taskId: number, userId: string): Promise<{ status: string }> {
+  return request(`/tasks/${taskId}/delete`, {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
+export function deleteNote(noteId: number, userId: string): Promise<{ status: string }> {
+  return request(`/notes/${noteId}/delete`, {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
 export function pingLlm(userId: string): Promise<LlmStatus> {
   return request(`/llm/status?${new URLSearchParams({ user_id: userId })}`);
 }

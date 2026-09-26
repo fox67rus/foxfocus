@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { getUserId, listAudit, listNotes, listTasks, reviewNote, reviewTask } from "../api";
+import {
+  deleteNote,
+  deleteTask,
+  getUserId,
+  listAudit,
+  listNotes,
+  listTasks,
+  reviewNote,
+  reviewTask,
+} from "../api";
+import { ConfirmDelete } from "../components/ConfirmDelete";
 import { ReviewBadge } from "../components/ReviewBadge";
 import type { AuditRun, ItemType, Note, Priority, Task } from "../types";
 
 export function ItemCard() {
   const { kind, id } = useParams();
+  const navigate = useNavigate();
   const userId = getUserId();
   const itemId = Number(id);
   const [task, setTask] = useState<Task | null>(null);
@@ -18,6 +29,9 @@ export function ItemCard() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [askDelete, setAskDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -66,6 +80,25 @@ export function ItemCard() {
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "не удалось сохранить");
+    }
+  }
+
+  async function removeItem() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      if (kind === "task") {
+        await deleteTask(itemId, userId);
+        navigate("/tasks");
+      } else {
+        await deleteNote(itemId, userId);
+        navigate("/notes");
+      }
+    } catch (err) {
+      setAskDelete(false);
+      setDeleteError(err instanceof Error ? err.message : "не удалось удалить");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -155,6 +188,25 @@ export function ItemCard() {
         </button>
         {saved ? <p className="text-sm text-emerald-400">Метка снята.</p> : null}
       </form>
+
+      <div className="border-t border-zinc-800 pt-4">
+        <button
+          type="button"
+          className="text-sm text-red-400 hover:text-red-300"
+          onClick={() => setAskDelete(true)}
+        >
+          Удалить {kind === "task" ? "задачу" : "заметку"}
+        </button>
+        {deleteError ? <p className="mt-2 text-sm text-red-400">{deleteError}</p> : null}
+      </div>
+      {askDelete ? (
+        <ConfirmDelete
+          title={title}
+          busy={deleting}
+          onCancel={() => setAskDelete(false)}
+          onConfirm={() => void removeItem()}
+        />
+      ) : null}
     </article>
   );
 }

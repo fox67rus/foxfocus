@@ -47,3 +47,23 @@ async def mark_task_done(
         response = StatusResponse(status="ok")
         journal.response = response.model_dump(mode="json")
         return response
+
+
+@router.post("/tasks/{task_id}/delete", response_model=StatusResponse)
+async def delete_task(
+    task_id: int,
+    payload: DoneRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> StatusResponse:
+    request_payload = {"task_id": task_id, "user_id": payload.user_id}
+    async with Journal(session, "delete", request_payload) as journal:
+        user = await require_user(session, payload.user_id)
+        journal.user_id = user.id
+
+        task = await require_task(session, user.id, task_id)
+        await session.delete(task)
+        await session.commit()
+
+        response = StatusResponse(status="ok")
+        journal.response = response.model_dump(mode="json")
+        return response
