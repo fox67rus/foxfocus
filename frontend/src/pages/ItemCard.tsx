@@ -103,22 +103,22 @@ export function ItemCard() {
   }
 
   if (!kind || Number.isNaN(itemId)) {
-    return <p className="text-sm text-zinc-500">Некорректный адрес.</p>;
+    return <p className="text-sm text-faint">Некорректный адрес.</p>;
   }
   if (loading) {
-    return <p className="text-sm text-zinc-500">Загружаю…</p>;
+    return <p className="text-sm text-faint">Загружаю…</p>;
   }
   if (error) {
-    return <p className="text-sm text-red-400">{error}</p>;
+    return <p className="text-sm text-danger">{error}</p>;
   }
   if (!item) {
-    return <p className="text-sm text-zinc-500">Запись не найдена.</p>;
+    return <p className="text-sm text-faint">Запись не найдена.</p>;
   }
 
   return (
     <article className="space-y-6">
-      <p className="text-sm text-zinc-500">
-        <Link to="/" className="hover:text-zinc-300">
+      <p className="text-sm text-faint">
+        <Link to="/" className="hover:text-ink-soft">
           ← входящие
         </Link>
       </p>
@@ -126,7 +126,7 @@ export function ItemCard() {
         <h1 className="text-xl font-semibold">{kind === "task" ? task?.title : note?.title || note?.text}</h1>
         {item.needs_review ? <ReviewBadge reason={item.review_reason} /> : null}
         {kind === "task" && task ? (
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted">
             {task.status} · {task.priority} · срок {task.due_date ?? "не указан"}
           </p>
         ) : null}
@@ -134,25 +134,25 @@ export function ItemCard() {
 
       <section className="grid gap-4 md:grid-cols-2">
         <div>
-          <h2 className="mb-2 text-xs uppercase text-zinc-500">Сырой ввод</h2>
-          <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-300">
+          <h2 className="mb-2 text-xs uppercase text-faint">Сырой ввод</h2>
+          <pre className="overflow-auto rounded border border-line bg-surface p-3 text-sm text-ink-soft">
             {sourceText || "—"}
           </pre>
         </div>
         <div>
-          <h2 className="mb-2 text-xs uppercase text-zinc-500">Вывод модели</h2>
-          <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-300">
+          <h2 className="mb-2 text-xs uppercase text-faint">Вывод модели</h2>
+          <pre className="overflow-auto rounded border border-line bg-surface p-3 text-sm text-ink-soft">
             {pretty(related.find((run) => run.action === "structure")?.output) || "нет записи structure"}
           </pre>
         </div>
       </section>
 
-      <form onSubmit={confirmReview} className="space-y-3 rounded border border-zinc-800 p-4">
+      <form onSubmit={confirmReview} className="space-y-3 rounded border border-line p-4">
         <h2 className="text-sm font-medium">Ручная проверка</h2>
-        <label className="block text-sm text-zinc-400">
+        <label className="block text-sm text-muted">
           заголовок
           <input
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+            className="mt-1 w-full rounded border border-line-strong bg-surface px-2 py-1 text-ink"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             required
@@ -160,19 +160,19 @@ export function ItemCard() {
         </label>
         {kind === "task" ? (
           <>
-            <label className="block text-sm text-zinc-400">
+            <label className="block text-sm text-muted">
               срок
               <input
                 type="date"
-                className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+                className="mt-1 w-full rounded border border-line-strong bg-surface px-2 py-1 text-ink"
                 value={dueDate}
                 onChange={(event) => setDueDate(event.target.value)}
               />
             </label>
-            <label className="block text-sm text-zinc-400">
+            <label className="block text-sm text-muted">
               приоритет
               <select
-                className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
+                className="mt-1 w-full rounded border border-line-strong bg-surface px-2 py-1 text-ink"
                 value={priority}
                 onChange={(event) => setPriority(event.target.value as Priority)}
               >
@@ -183,21 +183,21 @@ export function ItemCard() {
             </label>
           </>
         ) : null}
-        <button type="submit" className="rounded bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-950">
+        <button type="submit" className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink">
           Подтвердить проверку
         </button>
-        {saved ? <p className="text-sm text-emerald-400">Метка снята.</p> : null}
+        {saved ? <p className="text-sm text-ok">Метка снята.</p> : null}
       </form>
 
-      <div className="border-t border-zinc-800 pt-4">
+      <div className="border-t border-line pt-4">
         <button
           type="button"
-          className="text-sm text-red-400 hover:text-red-300"
+          className="text-sm text-danger hover:opacity-80"
           onClick={() => setAskDelete(true)}
         >
           Удалить {kind === "task" ? "задачу" : "заметку"}
         </button>
-        {deleteError ? <p className="mt-2 text-sm text-red-400">{deleteError}</p> : null}
+        {deleteError ? <p className="mt-2 text-sm text-danger">{deleteError}</p> : null}
       </div>
       {askDelete ? (
         <ConfirmDelete

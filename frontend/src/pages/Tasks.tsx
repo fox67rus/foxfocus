@@ -50,7 +50,7 @@ export function Tasks() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <select
-          className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1"
+          className="rounded border border-line-strong bg-surface px-2 py-1"
           value={status}
           onChange={(event) => setStatus(event.target.value as TaskFilter | "all")}
         >
@@ -58,7 +58,7 @@ export function Tasks() {
           <option value="done">сделанные</option>
           <option value="all">все</option>
         </select>
-        <label className="flex items-center gap-2 text-zinc-400">
+        <label className="flex items-center gap-2 text-muted">
           <input
             type="checkbox"
             checked={onlyReview}
@@ -66,17 +66,17 @@ export function Tasks() {
           />
           требует проверки
         </label>
-        <button type="button" className="text-zinc-400 hover:text-zinc-200" onClick={() => exportRows("json")}>
+        <button type="button" className="text-muted hover:text-ink" onClick={() => exportRows("json")}>
           JSON
         </button>
-        <button type="button" className="text-zinc-400 hover:text-zinc-200" onClick={() => exportRows("csv")}>
+        <button type="button" className="text-muted hover:text-ink" onClick={() => exportRows("csv")}>
           CSV
         </button>
       </div>
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
-          <thead className="text-xs uppercase text-zinc-500">
+          <thead className="text-xs uppercase text-faint">
             <tr>
               <th className="py-2 pr-3">Заголовок</th>
               <th className="py-2 pr-3">Срок</th>
@@ -86,7 +86,7 @@ export function Tasks() {
               <th className="py-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800">
+          <tbody className="divide-y divide-line">
             {visible.map((task) => (
               <tr key={task.id}>
                 <td className="py-2 pr-3">
@@ -94,9 +94,9 @@ export function Tasks() {
                     {task.title}
                   </Link>
                 </td>
-                <td className="py-2 pr-3 text-zinc-400">{task.due_date ?? "—"}</td>
-                <td className="py-2 pr-3 text-zinc-400">{task.priority}</td>
-                <td className="py-2 pr-3 text-zinc-400">{task.status}</td>
+                <td className="py-2 pr-3 text-muted">{task.due_date ?? "—"}</td>
+                <td className="py-2 pr-3 text-muted">{task.priority}</td>
+                <td className="py-2 pr-3 text-muted">{task.status}</td>
                 <td className="py-2 pr-3">
                   {task.needs_review ? <ReviewBadge reason={task.review_reason} /> : "—"}
                 </td>
@@ -104,7 +104,7 @@ export function Tasks() {
                   {task.status !== "done" ? (
                     <button
                       type="button"
-                      className="text-zinc-300 hover:text-white"
+                      className="text-ink-soft hover:text-ink"
                       onClick={() => complete(task.id)}
                     >
                       Выполнить
@@ -116,7 +116,7 @@ export function Tasks() {
           </tbody>
         </table>
       </div>
-      {visible.length === 0 ? <p className="text-sm text-zinc-500">Нет задач по фильтру.</p> : null}
+      {visible.length === 0 ? <p className="text-sm text-faint">Нет задач по фильтру.</p> : null}
     </section>
   );
 }

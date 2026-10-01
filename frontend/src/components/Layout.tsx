@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useState } from "react";
 
 import { getUserId, setUserId } from "../api";
-import { useState } from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { to: "/", label: "Входящие" },
@@ -15,9 +16,9 @@ export function Layout() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div className="flex items-baseline gap-6">
-          <span className="text-sm font-semibold tracking-wide text-zinc-200">Foxfocus</span>
+          <span className="text-sm font-semibold tracking-wide text-ink-soft">Foxfocus</span>
           <nav className="flex gap-4 text-sm">
             {LINKS.map((link) => (
               <NavLink
@@ -25,7 +26,7 @@ export function Layout() {
                 to={link.to}
                 end={link.to === "/"}
                 className={({ isActive }) =>
-                  isActive ? "text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
+                  isActive ? "text-ink" : "text-faint hover:text-ink-soft"
                 }
               >
                 {link.label}
@@ -33,21 +34,24 @@ export function Layout() {
             ))}
           </nav>
         </div>
-        <label className="flex items-center gap-2 text-xs text-zinc-500">
-          пользователь
-          <select
-            className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-200"
-            value={userId}
-            onChange={(event) => {
-              setUserId(event.target.value);
-              setUser(event.target.value);
-              window.location.reload();
-            }}
-          >
-            <option value="u_1">u_1</option>
-            <option value="u_2">u_2</option>
-          </select>
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-xs text-faint">
+            пользователь
+            <select
+              className="rounded border border-line-strong bg-surface px-2 py-1 text-ink-soft"
+              value={userId}
+              onChange={(event) => {
+                setUserId(event.target.value);
+                setUser(event.target.value);
+                window.location.reload();
+              }}
+            >
+              <option value="u_1">u_1</option>
+              <option value="u_2">u_2</option>
+            </select>
+          </label>
+          <ThemeToggle />
+        </div>
       </header>
       <main className="flex-1">
         <Outlet />

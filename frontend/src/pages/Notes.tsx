@@ -36,7 +36,7 @@ export function Notes() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <label className="flex items-center gap-2 text-zinc-400">
+        <label className="flex items-center gap-2 text-muted">
           <input
             type="checkbox"
             checked={onlyReview}
@@ -44,14 +44,14 @@ export function Notes() {
           />
           требует проверки
         </label>
-        <button type="button" className="text-zinc-400 hover:text-zinc-200" onClick={() => exportRows("json")}>
+        <button type="button" className="text-muted hover:text-ink" onClick={() => exportRows("json")}>
           JSON
         </button>
-        <button type="button" className="text-zinc-400 hover:text-zinc-200" onClick={() => exportRows("csv")}>
+        <button type="button" className="text-muted hover:text-ink" onClick={() => exportRows("csv")}>
           CSV
         </button>
       </div>
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
       <NoteStickers notes={visible} />
     </section>
   );

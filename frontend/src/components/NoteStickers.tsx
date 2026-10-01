@@ -9,7 +9,7 @@ type Props = {
 
 export function NoteStickers({ notes }: Props) {
   if (notes.length === 0) {
-    return <p className="text-sm text-zinc-500">Пока нет заметок.</p>;
+    return <p className="text-sm text-faint">Пока нет заметок.</p>;
   }
 
   return (

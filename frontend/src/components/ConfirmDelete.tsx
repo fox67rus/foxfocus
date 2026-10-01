@@ -13,14 +13,14 @@ export function ConfirmDelete({ title, busy = false, onCancel, onConfirm }: Prop
       aria-labelledby="confirm-delete-title"
       className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 p-4"
     >
-      <div className="w-full max-w-sm space-y-4 rounded border border-zinc-700 bg-zinc-900 p-4 shadow-xl">
-        <p id="confirm-delete-title" className="text-sm text-zinc-100">
+      <div className="w-full max-w-sm space-y-4 rounded border border-line-strong bg-surface p-4 shadow-xl">
+        <p id="confirm-delete-title" className="text-sm text-ink">
           Удалить «{title}»? Это нельзя отменить.
         </p>
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            className="text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-40"
+            className="text-sm text-muted hover:text-ink disabled:opacity-40"
             onClick={onCancel}
             disabled={busy}
           >

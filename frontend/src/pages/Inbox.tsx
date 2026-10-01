@@ -45,7 +45,7 @@ export function Inbox() {
     <section className="space-y-6">
       <form onSubmit={onSubmit} className="space-y-3">
         <textarea
-          className="h-32 w-full resize-y rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+          className="h-32 w-full resize-y rounded border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-faint"
           placeholder="Вставьте сырой текст"
           value={text}
           onChange={(event) => setText(event.target.value)}
@@ -55,11 +55,11 @@ export function Inbox() {
           <button
             type="submit"
             disabled={busy || !text.trim()}
-            className="rounded bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-950 disabled:opacity-40"
+            className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-ink disabled:opacity-40"
           >
             {busy ? "Разбираю…" : "Разобрать"}
           </button>
-          <label className="flex items-center gap-2 text-sm text-zinc-400">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={onlyReview}
@@ -69,7 +69,7 @@ export function Inbox() {
           </label>
         </div>
       </form>
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
       <InboxList items={visible} />
     </section>
   );

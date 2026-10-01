@@ -56,7 +56,7 @@ export function Journal() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <label className="flex items-center gap-2 text-zinc-400">
+        <label className="flex items-center gap-2 text-muted">
           <input
             type="checkbox"
             checked={onlyErrors}
@@ -66,14 +66,14 @@ export function Journal() {
         </label>
         <button
           type="button"
-          className="text-zinc-400 hover:text-zinc-200"
+          className="text-muted hover:text-ink"
           onClick={() => void checkLlm()}
           disabled={llmBusy}
         >
           {llmBusy ? "проверяю связь…" : "проверка связи"}
         </button>
         {llm ? (
-          <span className={llm.status === "ok" ? "text-emerald-400" : "text-amber-300"}>
+          <span className={llm.status === "ok" ? "text-ok" : "text-warn"}>
             {llm.mode}
             {llm.provider ? ` · ${llm.provider}` : ""}
             {llm.model ? ` · ${llm.model}` : ""}
@@ -82,15 +82,15 @@ export function Journal() {
             {llm.detail ? ` · ${llm.detail}` : ""}
           </span>
         ) : null}
-        <button type="button" className="text-zinc-400 hover:text-zinc-200" onClick={() => exportRows("json")}>
+        <button type="button" className="text-muted hover:text-ink" onClick={() => exportRows("json")}>
           JSON
         </button>
-        <button type="button" className="text-zinc-400 hover:text-zinc-200" onClick={() => exportRows("csv")}>
+        <button type="button" className="text-muted hover:text-ink" onClick={() => exportRows("csv")}>
           CSV
         </button>
       </div>
-      {error ? <p className="text-sm text-red-400">{error}</p> : null}
-      <ul className="divide-y divide-zinc-800">
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      <ul className="divide-y divide-line">
         {visible.map((run) => (
           <li key={run.id} className="py-3">
             <button
@@ -99,26 +99,26 @@ export function Journal() {
               onClick={() => setOpenId(openId === run.id ? null : run.id)}
             >
               <div>
-                <p className="text-sm text-zinc-200">
+                <p className="text-sm text-ink-soft">
                   {run.action} · {run.status}
-                  {run.error ? <span className="ml-2 text-amber-300">{run.error}</span> : null}
+                  {run.error ? <span className="ml-2 text-warn">{run.error}</span> : null}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-faint">
                   {new Date(run.created_at).toLocaleString("ru-RU")} · {run.duration_ms} мс
                 </p>
               </div>
-              <span className="text-xs text-zinc-600">{openId === run.id ? "скрыть" : "открыть"}</span>
+              <span className="text-xs text-dim">{openId === run.id ? "скрыть" : "открыть"}</span>
             </button>
             {openId === run.id ? (
               <div className="mt-3 space-y-2">
                 {errorDetail(run.output) ? (
-                  <p className="text-xs text-amber-300">{errorDetail(run.output)}</p>
+                  <p className="text-xs text-warn">{errorDetail(run.output)}</p>
                 ) : null}
                 <div className="grid gap-3 text-xs md:grid-cols-2">
-                  <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-zinc-300">
+                  <pre className="overflow-auto rounded border border-line bg-surface p-3 text-ink-soft">
                     {pretty(run.input)}
                   </pre>
-                  <pre className="overflow-auto rounded border border-zinc-800 bg-zinc-900 p-3 text-zinc-300">
+                  <pre className="overflow-auto rounded border border-line bg-surface p-3 text-ink-soft">
                     {pretty(run.output)}
                   </pre>
                 </div>
@@ -127,7 +127,7 @@ export function Journal() {
           </li>
         ))}
       </ul>
-      {visible.length === 0 ? <p className="text-sm text-zinc-500">Журнал пуст.</p> : null}
+      {visible.length === 0 ? <p className="text-sm text-faint">Журнал пуст.</p> : null}
     </section>
   );
 }
