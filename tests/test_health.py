@@ -25,7 +25,8 @@ async def test_llm_status_mock_is_ok_and_audited(client, db_sessions):
     assert "api_key" not in dumped
 
     async with db_sessions() as session:
-        runs = (await session.scalars(select(AuditRun).where(AuditRun.action == "llm_status"))).all()
+        query = select(AuditRun).where(AuditRun.action == "llm_status")
+        runs = (await session.scalars(query)).all()
     assert len(runs) == 1
     assert runs[0].status == "ok"
 

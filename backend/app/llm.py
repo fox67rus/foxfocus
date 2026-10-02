@@ -6,7 +6,6 @@ from datetime import date, timedelta
 from typing import Any, Protocol
 
 import httpx
-
 from openai import APIConnectionError, APIError, APITimeoutError, AsyncOpenAI
 
 from app.config import Settings
